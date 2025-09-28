@@ -1,0 +1,7 @@
+{
+  "name": "Core. by Longani",
+  "description": "Core. is an advanced translator for Mozambican Bantu languages. It uses Google Search to find linguistic resources in real-time, providing context-aware and culturally nuanced translations powered by the Gemini API.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

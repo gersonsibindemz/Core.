@@ -1,4 +1,5 @@
 
+
 export interface LanguageOption {
   value: string;
   label: string;
@@ -16,6 +17,8 @@ export interface TranslationResponse {
 }
 
 // --- Voice Translation API Types ---
+
+export type VoiceSessionMode = 'unidirectional' | 'bidirectional';
 
 export type VoiceSessionState = 'idle' | 'listening' | 'speaking' | 'error' | 'closed' | 'connecting';
 

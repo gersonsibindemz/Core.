@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import CodeBlock from '../components/CodeBlock';
 import CopyButton from '../components/CopyButton';
@@ -115,13 +116,13 @@ async function translateText(text, from, to) {
 // B. Voice Translation Example
 let activeVoiceSessionId = null;
 
-async function startVoiceTranslation() {
+async function startVoiceTranslation(mode = 'unidirectional') {
   if (activeVoiceSessionId) {
     console.warn('A voice session is already active.');
     return;
   }
   
-  console.log('Starting voice session...');
+  console.log(\`Starting voice session in \${mode} mode...\`);
   
   // Set up listeners for real-time events from the voice session.
   window.addEventListener('message', handleVoiceEvents);
@@ -129,7 +130,8 @@ async function startVoiceTranslation() {
   try {
     const result = await callLonganiApi('start-voice-session', {
       sourceLanguage: 'Portuguese',
-      targetLanguage: 'Changana'
+      targetLanguage: 'Changana',
+      mode: mode, // Can be 'unidirectional' or 'bidirectional'
     });
     console.log('Voice session started successfully!', result);
     activeVoiceSessionId = result.sessionId;
@@ -202,7 +204,8 @@ iframe.addEventListener('load', () => {
   // translateText("Olá, como está?", "Portuguese", "Changana");
   
   // Example: Add event listeners to your buttons
-  // document.getElementById('start-voice-btn').addEventListener('click', startVoiceTranslation);
+  // document.getElementById('start-unidirectional-btn').addEventListener('click', () => startVoiceTranslation('unidirectional'));
+  // document.getElementById('start-bidirectional-btn').addEventListener('click', () => startVoiceTranslation('bidirectional'));
   // document.getElementById('stop-voice-btn').addEventListener('click', stopVoiceTranslation);
 });
 `;
@@ -532,6 +535,14 @@ const ApiDocsPage: React.FC = () => {
                     <p className="mb-4 text-slate-400">
                         Use this JavaScript client to communicate with the iframe. Configure it with either your origin-specific key or a global key.
                     </p>
+                    <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 space-y-2 text-sm text-slate-400 mb-4">
+                        <h4 className="font-semibold text-slate-300">New: Voice Translation Modes</h4>
+                        <p>The <code className="bg-slate-900 text-teal-300 px-1 py-0.5 rounded">start-voice-session</code> method now accepts an optional <code className="bg-slate-900 text-teal-300 px-1 py-0.5 rounded">mode</code> parameter in its payload:</p>
+                        <ul className="list-disc list-inside pl-4">
+                            <li><code className="bg-slate-900 text-teal-300 px-1 py-0.5 rounded">'unidirectional'</code> (Default): Translates from <code className="bg-slate-900 text-teal-300 px-1 py-0.5 rounded">sourceLanguage</code> to <code className="bg-slate-900 text-teal-300 px-1 py-0.5 rounded">targetLanguage</code> only.</li>
+                            <li><code className="bg-slate-900 text-teal-300 px-1 py-0.5 rounded">'bidirectional'</code>: Enables a two-way conversation. The API will detect the spoken language and translate to the other language.</li>
+                        </ul>
+                    </div>
                     <CodeBlock code={jsExample} language="javascript" />
                 </div>
                 

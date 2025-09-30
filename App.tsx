@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { translateWithResearch } from './services/geminiService';
 import { createVoiceSession } from './services/geminiLiveService';
@@ -11,6 +12,7 @@ import MicIcon from './components/MicIcon';
 import StopIcon from './components/StopIcon';
 import InfoIcon from './components/InfoIcon';
 import ApiDropdown from './components/ApiDropdown';
+import ToggleSwitch from './components/ToggleSwitch';
 
 
 const App: React.FC = () => {
@@ -27,6 +29,7 @@ const App: React.FC = () => {
   const [voiceState, setVoiceState] = useState<VoiceSessionState>('idle');
   const [transcription, setTranscription] = useState<TranscriptionData | null>(null);
   const voiceSessionRef = useRef<{ stop: () => void } | null>(null);
+  const [isConversationMode, setIsConversationMode] = useState<boolean>(false);
 
 
   const handleTranslate = useCallback(async () => {
@@ -67,23 +70,28 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      const session = await createVoiceSession(sourceLang.value, targetLang.value, {
-        onStateChange: (state) => setVoiceState(state),
-        onTranscriptionUpdate: (data) => setTranscription(data),
-        onError: (err) => {
-          console.error('Voice session error:', err);
-          setError('Voice translation failed. Check console for details.');
-          setVoiceState('error');
-          voiceSessionRef.current = null;
+      const session = await createVoiceSession(
+        sourceLang.value, 
+        targetLang.value, 
+        {
+          onStateChange: (state) => setVoiceState(state),
+          onTranscriptionUpdate: (data) => setTranscription(data),
+          onError: (err) => {
+            console.error('Voice session error:', err);
+            setError('Voice translation failed. Check console for details.');
+            setVoiceState('error');
+            voiceSessionRef.current = null;
+          },
         },
-      });
+        isConversationMode ? 'bidirectional' : 'unidirectional'
+      );
       voiceSessionRef.current = session;
     } catch (err) {
       setError('Could not start voice session. Please grant microphone permissions.');
       console.error(err);
       setVoiceState('error');
     }
-  }, [sourceLang, targetLang]);
+  }, [sourceLang, targetLang, isConversationMode]);
 
   const isVoiceSessionActive = voiceState !== 'idle' && voiceState !== 'closed' && voiceState !== 'error';
   
@@ -127,7 +135,7 @@ const App: React.FC = () => {
         <main className="bg-slate-800 shadow-2xl shadow-slate-950/50 rounded-2xl p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-end gap-4 mb-6">
             <LanguageSelector
-              label="From"
+              label={isConversationMode ? 'Language A' : 'From'}
               selectedLanguage={sourceLang}
               onLanguageChange={setSourceLang}
               languages={LANGUAGES}
@@ -142,7 +150,7 @@ const App: React.FC = () => {
                 <SwapIcon />
               </button>
              <LanguageSelector
-              label="To"
+              label={isConversationMode ? 'Language B' : 'To'}
               selectedLanguage={targetLang}
               onLanguageChange={setTargetLang}
               languages={LANGUAGES}
@@ -154,9 +162,9 @@ const App: React.FC = () => {
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Enter text to translate..."
+              placeholder={isConversationMode ? "Conversation mode is active..." : "Enter text to translate..."}
               className="w-full h-48 p-4 bg-slate-900 border-2 border-slate-700 rounded-lg resize-y placeholder-slate-500 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-colors"
-              disabled={isLoading || isVoiceSessionActive}
+              disabled={isLoading || isVoiceSessionActive || isConversationMode}
             />
             <div>
               <div className="relative w-full h-48">
@@ -189,31 +197,41 @@ const App: React.FC = () => {
             </div>
           </div>
           
-          <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
-             <button
-              onClick={handleTranslate}
-              disabled={isLoading || !inputText.trim() || isVoiceSessionActive}
-              className="flex items-center justify-center w-full max-w-xs px-8 py-4 bg-teal-600 text-white font-bold rounded-lg hover:bg-teal-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 disabled:scale-100"
-            >
-              {isLoading ? <><Spinner /><span>Translating...</span></> : 'Translate Text'}
-            </button>
-             <button
-              onClick={handleToggleVoiceSession}
-              disabled={isLoading || voiceState === 'connecting'}
-              className={`flex items-center justify-center w-full max-w-xs px-8 py-4 font-bold rounded-lg transition-all duration-300 transform hover:scale-105 disabled:scale-100 ${isVoiceSessionActive ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-sky-600 hover:bg-sky-500 text-white'} disabled:bg-slate-600 disabled:cursor-not-allowed`}
-            >
-              {getVoiceButtonContent()}
-            </button>
+          <div className="mt-8 flex flex-col items-center gap-6">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full max-w-xl">
+              <button
+                onClick={handleTranslate}
+                disabled={isLoading || !inputText.trim() || isVoiceSessionActive || isConversationMode}
+                className="flex items-center justify-center w-full sm:w-1/2 px-8 py-4 bg-teal-600 text-white font-bold rounded-lg hover:bg-teal-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 disabled:scale-100"
+              >
+                {isLoading ? <><Spinner /><span>Translating...</span></> : 'Translate Text'}
+              </button>
+              <button
+                onClick={handleToggleVoiceSession}
+                disabled={isLoading || voiceState === 'connecting'}
+                className={`flex items-center justify-center w-full sm:w-1/2 px-8 py-4 font-bold rounded-lg transition-all duration-300 transform hover:scale-105 disabled:scale-100 ${isVoiceSessionActive ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-sky-600 hover:bg-sky-500 text-white'} disabled:bg-slate-600 disabled:cursor-not-allowed`}
+              >
+                {getVoiceButtonContent()}
+              </button>
+            </div>
+            <div className="w-full max-w-xs">
+              <ToggleSwitch 
+                label="Conversation Mode"
+                enabled={isConversationMode}
+                onChange={setIsConversationMode}
+                disabled={isVoiceSessionActive}
+              />
+            </div>
           </div>
 
            {isVoiceSessionActive && transcription && (
             <div className="mt-8 pt-6 border-t border-slate-700 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h3 className="font-semibold text-slate-300 mb-2">{sourceLang.label} (You)</h3>
+                <h3 className="font-semibold text-slate-300 mb-2">{sourceLang.label}{!isConversationMode && ' (You)'}</h3>
                 <p className="text-slate-100 min-h-[2em]">{transcription.userInput || '...'}</p>
               </div>
                <div>
-                <h3 className="font-semibold text-slate-300 mb-2">{targetLang.label} (AI)</h3>
+                <h3 className="font-semibold text-slate-300 mb-2">{targetLang.label}{!isConversationMode && ' (AI)'}</h3>
                 <p className="text-teal-300 min-h-[2em]">{transcription.modelOutput || '...'}</p>
               </div>
             </div>

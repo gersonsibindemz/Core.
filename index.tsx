@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { translateWithResearch } from './services/geminiService';
 import { createVoiceSession } from './services/geminiLiveService';
-import { TranslationResponse, VoiceSessionCallbacks, ApiConnectionLog } from './types';
+import { TranslationResponse, VoiceSessionCallbacks, ApiConnectionLog, VoiceSessionMode } from './types';
 import { LANGUAGES } from './constants';
 import ApiLogPage from './pages/ApiLogPage';
 import ApiDocsPage from './pages/ApiDocsPage';
@@ -23,6 +24,7 @@ interface VoiceSessionParams {
   sourceLanguage: string;
   targetLanguage: string;
   callbacks: VoiceSessionCallbacks;
+  mode?: VoiceSessionMode;
 }
 
 function validateLanguages(sourceLanguage: string, targetLanguage:string) {
@@ -43,10 +45,10 @@ async function requestTextTranslation(params: TranslateApiParams): Promise<Trans
 }
 
 async function startVoiceSession(params: VoiceSessionParams) {
-    const { sourceLanguage, targetLanguage, callbacks } = params;
+    const { sourceLanguage, targetLanguage, callbacks, mode } = params;
     if (!sourceLanguage || !targetLanguage || !callbacks) throw new Error('Missing required parameters.');
     validateLanguages(sourceLanguage, targetLanguage);
-    return createVoiceSession(sourceLanguage, targetLanguage, callbacks);
+    return createVoiceSession(sourceLanguage, targetLanguage, callbacks, mode);
 }
 
 declare global {

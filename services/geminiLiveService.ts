@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Modality, LiveServerMessage, Blob } from '@google/genai';
-import { VoiceSessionCallbacks } from '../types';
+import { VoiceSessionCallbacks, VoiceSessionMode } from '../types';
 
 if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable not set");
@@ -62,7 +63,8 @@ function createBlob(data: Float32Array): Blob {
 export async function createVoiceSession(
   sourceLang: string,
   targetLang: string,
-  callbacks: VoiceSessionCallbacks
+  callbacks: VoiceSessionCallbacks,
+  mode: VoiceSessionMode = 'unidirectional'
 ) {
   callbacks.onStateChange('connecting');
 
@@ -81,7 +83,12 @@ export async function createVoiceSession(
 
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  const systemInstruction = `You are a real-time, low-latency translator. The user will speak in ${sourceLang}, and you must immediately respond by translating their speech into ${targetLang}. Do not add any conversational filler, confirmation, or introductory text. Just provide the direct, spoken translation of what the user said.`;
+  let systemInstruction: string;
+  if (mode === 'bidirectional') {
+    systemInstruction = `You are a real-time, low-latency translator for a conversation between a ${sourceLang} speaker and a ${targetLang} speaker. Listen to the user. If they speak in ${sourceLang}, you MUST translate it to ${targetLang}. If they speak in ${targetLang}, you MUST translate it to ${sourceLang}. Respond ONLY with the translated speech. Do not add any conversational filler, confirmation, or introductory text. Just provide the direct, spoken translation.`;
+  } else {
+    systemInstruction = `You are a real-time, low-latency translator. The user will speak in ${sourceLang}, and you must immediately respond by translating their speech into ${targetLang}. Do not add any conversational filler, confirmation, or introductory text. Just provide the direct, spoken translation of what the user said.`;
+  }
 
   const sessionPromise = ai.live.connect({
     model: 'gemini-2.5-flash-native-audio-preview-09-2025',
